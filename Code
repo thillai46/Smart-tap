@@ -1,0 +1,51 @@
+// Pin definitions
+const int flowSensorPin = 2;   // Digital pin for the flow sensor
+const int valvePin = 9;         // Digital pin for the solenoid valve
+
+// Variables
+volatile int flowPulseCount = 0;
+float flowRate = 0.0;
+unsigned long previousMillis = 0;
+const int interval = 1000; // Update rate for flow rate in milliseconds
+
+// Interrupt service routine for flow sensor
+void flowSensorISR() {
+    flowPulseCount++;
+}
+
+void setup() {
+    // Initialize serial communication
+    Serial.begin(9600);
+
+    // Setup pins
+    pinMode(valvePin, OUTPUT);
+    digitalWrite(valvePin, LOW); // Ensure the valve is closed initially
+
+    // Setup flow sensor pin
+    pinMode(flowSensorPin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(flowSensorPin), flowSensorISR, RISING);
+}
+
+void loop() {
+    // Calculate flow rate every second
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
+
+        // Calculate flow rate in liters/minute
+        flowRate = (flowPulseCount / 7.5); // Assuming 7.5 pulses per liter
+        flowPulseCount = 0;
+
+        // Print flow rate to serial monitor
+        Serial.print("Flow Rate: ");
+        Serial.print(flowRate);
+        Serial.println(" L/min");
+
+        // Example logic to control the valve
+        if (flowRate > 0) {
+            digitalWrite(valvePin, HIGH); // Open the valve if water is flowing
+        } else {
+            digitalWrite(valvePin, LOW); // Close the valve if not
+        }
+    }
+}
